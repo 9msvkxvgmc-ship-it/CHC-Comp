@@ -1,0 +1,98 @@
+name: Build Distributables
+
+on:
+  push:
+    tags:
+      - "v*"          # triggers on version tags like v1.0, v1.1
+  workflow_dispatch:  # allows manual trigger from the GitHub Actions tab
+
+jobs:
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -e .
+          pip install pyinstaller
+
+      - name: Build .app
+        run: |
+          python -m PyInstaller \
+            --windowed \
+            --onedir \
+            --name ChargeSupervisionMatrix \
+            --hidden-import charge_supervision_matrix.gui \
+            --hidden-import charge_supervision_matrix.runner \
+            --hidden-import charge_supervision_matrix.suggest \
+            --hidden-import charge_supervision_matrix.analysis \
+            --hidden-import charge_supervision_matrix.parser \
+            --hidden-import charge_supervision_matrix.output \
+            --hidden-import charge_supervision_matrix.wrvu \
+            --hidden-import charge_supervision_matrix.config \
+            --hidden-import pandas \
+            --hidden-import openpyxl \
+            --hidden-import openpyxl.styles \
+            --hidden-import openpyxl.utils \
+            gui_app.py
+
+      - name: Zip .app for download
+        run: |
+          cd dist
+          zip -r ChargeSupervisionMatrix-Mac.zip ChargeSupervisionMatrix.app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChargeSupervisionMatrix-Mac
+          path: dist/ChargeSupervisionMatrix-Mac.zip
+          retention-days: 30
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -e .
+          pip install pyinstaller
+
+      - name: Build .exe
+        run: |
+          python -m PyInstaller `
+            --windowed `
+            --onedir `
+            --name ChargeSupervisionMatrix `
+            --hidden-import charge_supervision_matrix.gui `
+            --hidden-import charge_supervision_matrix.runner `
+            --hidden-import charge_supervision_matrix.suggest `
+            --hidden-import charge_supervision_matrix.analysis `
+            --hidden-import charge_supervision_matrix.parser `
+            --hidden-import charge_supervision_matrix.output `
+            --hidden-import charge_supervision_matrix.wrvu `
+            --hidden-import charge_supervision_matrix.config `
+            --hidden-import pandas `
+            --hidden-import openpyxl `
+            --hidden-import openpyxl.styles `
+            --hidden-import openpyxl.utils `
+            gui_app.py
+
+      - name: Zip for download
+        run: |
+          Compress-Archive -Path dist\ChargeSupervisionMatrix -DestinationPath dist\ChargeSupervisionMatrix-Windows.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChargeSupervisionMatrix-Windows
+          path: dist\ChargeSupervisionMatrix-Windows.zip
+          retention-days: 30
