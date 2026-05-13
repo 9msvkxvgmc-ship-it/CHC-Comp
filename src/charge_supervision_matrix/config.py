@@ -11,6 +11,7 @@ class Config:
         default_factory=lambda: [
             r"\bPA-C\b", r"\bPA\b", r"\bNP\b", r"\bAGNP-C\b",
             r"\bCRNP\b", r"\bFNP\b", r"\bANP\b", r"\bDNP\b",
+            r"\bAPRN\b", r"\bMSN\b",
         ]
     )
     wrvu_file: str | None = None  # path to CMS RVU CSV; None = use built-in table

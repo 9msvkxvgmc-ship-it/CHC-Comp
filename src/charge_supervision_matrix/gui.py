@@ -61,6 +61,7 @@ class App(tk.Tk):
         self.minsize(800, 600)
 
         self._analysis: dict | None = None
+        self._report_type = tk.StringVar(value="inpatient")
         self._app_vars: dict[str, tk.BooleanVar] = {}
         self._md_vars: dict[str, tk.BooleanVar] = {}
         self._review_vars: dict[str, tk.StringVar] = {}
@@ -88,18 +89,30 @@ class App(tk.Tk):
             anchor="w", padx=14, pady=(12, 6)
         )
 
-        # Step 1 — file selection
+        # Step 1 — file selection + report type
         f1 = ttk.LabelFrame(self, text="Step 1 — Select Input File", padding=10)
         f1.pack(fill="x", padx=12, pady=(0, 4))
 
         self._inp_var = tk.StringVar()
-        ttk.Entry(f1, textvariable=self._inp_var, width=68).pack(
+        ttk.Entry(f1, textvariable=self._inp_var, width=58).pack(
             side="left", fill="x", expand=True, padx=(0, 6)
         )
         ttk.Button(f1, text="Browse…", command=self._browse_input).pack(side="left")
+
+        # Report type selector
+        rt_frame = ttk.Frame(f1)
+        rt_frame.pack(side="left", padx=(14, 0))
+        ttk.Label(rt_frame, text="Type:").pack(side="left", padx=(0, 4))
+        ttk.Radiobutton(
+            rt_frame, text="Inpatient", variable=self._report_type, value="inpatient"
+        ).pack(side="left")
+        ttk.Radiobutton(
+            rt_frame, text="Outpatient", variable=self._report_type, value="outpatient"
+        ).pack(side="left", padx=(6, 0))
+
         ttk.Button(
             f1, text="  Analyze Signers  ", style="Big.TButton", command=self._start_analyze
-        ).pack(side="left", padx=(10, 0))
+        ).pack(side="left", padx=(12, 0))
 
         self._info_lbl = ttk.Label(self, text="", style="Sub.TLabel")
         self._info_lbl.pack(anchor="w", padx=16)
@@ -166,11 +179,12 @@ class App(tk.Tk):
             return
         self._status_var.set("Analyzing…")
         self.update_idletasks()
-        threading.Thread(target=self._run_analyze, args=(path,), daemon=True).start()
+        rt = self._report_type.get()
+        threading.Thread(target=self._run_analyze, args=(path, rt), daemon=True).start()
 
-    def _run_analyze(self, path):
+    def _run_analyze(self, path, report_type):
         try:
-            result = suggest.analyze(path)
+            result = suggest.analyze(path, report_type=report_type)
             self.after(0, lambda: self._show_review(result))
         except Exception as exc:
             self.after(0, lambda: (
@@ -354,10 +368,11 @@ class App(tk.Tk):
         self._status_var.set("Generating report…")
         self.update_idletasks()
         inp = self._inp_var.get().strip()
+        rt = self._report_type.get()
 
         def _run():
             try:
-                written = runner.run(input_path=inp, output_path=out, config=config)
+                written = runner.run(input_path=inp, output_path=out, config=config, report_type=rt)
                 self.after(0, lambda: self._done(written))
             except Exception as exc:
                 self.after(0, lambda: (

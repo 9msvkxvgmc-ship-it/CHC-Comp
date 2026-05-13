@@ -58,6 +58,12 @@ def main():
         help="Completely omit this person from output (repeatable)",
     )
     parser.add_argument(
+        "--report-type",
+        choices=["inpatient", "outpatient"],
+        default="inpatient",
+        help="Report type: inpatient (grouped by Supervising MD) or outpatient (grouped by Order MD) [default: inpatient]",
+    )
+    parser.add_argument(
         "--wrvu-file",
         default=None,
         metavar="PATH",
@@ -74,7 +80,7 @@ def main():
 
     if args.suggest:
         try:
-            print_report(args.input)
+            print_report(args.input, report_type=args.report_type)
         except Exception as exc:
             print(f"Error: {exc}", file=sys.stderr)
             sys.exit(1)
@@ -90,7 +96,7 @@ def main():
     )
 
     try:
-        out = run(input_path=args.input, output_path=args.output, config=config)
+        out = run(input_path=args.input, output_path=args.output, config=config, report_type=args.report_type)
         print(f"Written: {out}")
     except Exception as exc:
         print(f"Error: {exc}", file=sys.stderr)

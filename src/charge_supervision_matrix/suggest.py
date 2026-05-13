@@ -8,7 +8,7 @@ import pandas as pd
 from . import parser
 
 _MD_PATTERN = re.compile(r"\b(MD|DO|MD PhD|PhD MD)\b")
-_APP_PATTERN = re.compile(r"\b(PA-C|PA|NP|AGNP-C|CRNP|FNP|ANP|DNP|FNP-BC|NP-C)\b")
+_APP_PATTERN = re.compile(r"\b(PA-C|PA|NP|AGNP-C|CRNP|FNP|ANP|DNP|FNP-BC|NP-C|APRN|MSN)\b")
 _OTHER_PATTERN = re.compile(r"\b(PhD|RN|RN-BC|LCSW|LPN|CMA|MT|RT|RPh|PharmD)\b")
 
 
@@ -22,8 +22,8 @@ def _classify(name: str) -> str:
     return "unknown"
 
 
-def analyze(path: str) -> dict:
-    df = parser.parse(path)
+def analyze(path: str, report_type: str = "inpatient") -> dict:
+    df = parser.parse(path, report_type=report_type)
 
     signers = sorted(df["signed_off_by"].dropna().unique())
     charge_counts = df["signed_off_by"].value_counts().to_dict()
@@ -67,8 +67,8 @@ def analyze(path: str) -> dict:
     }
 
 
-def print_report(path: str):
-    r = analyze(path)
+def print_report(path: str, report_type: str = "inpatient"):
+    r = analyze(path, report_type=report_type)
 
     print(f"\nFile: {path}")
     print(f"Date range: {r['date_range']}")
@@ -124,6 +124,8 @@ def print_report(path: str):
     print("Suggested command (edit as needed)")
     print("=" * 60)
     print(f'charge-supervision-matrix "{path}" \\')
+    if report_type != "inpatient":
+        print(f'  --report-type "{report_type}" \\')
     for name in r["md_signers"]:
         print(f'  --reclassify-as-md "{name}" \\')
     for name in add_app_recommended:

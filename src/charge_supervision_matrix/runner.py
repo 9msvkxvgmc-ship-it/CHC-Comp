@@ -11,6 +11,7 @@ def run(
     input_path: str,
     output_path: str | None = None,
     config: Config | None = None,
+    report_type: str = "inpatient",
 ) -> str:
     """
     Process a raw 'All Signed Charges' Excel export and write an output workbook.
@@ -21,6 +22,7 @@ def run(
     output_path : where to write the output xlsx; defaults to <stem>_report.xlsx
                   next to the input file
     config      : Config instance; defaults to Config() with no exclusions
+    report_type : "inpatient" (default) or "outpatient"
 
     Returns
     -------
@@ -34,7 +36,7 @@ def run(
         output_path = stem + "_report.xlsx"
 
     wrvu_table = wrvu.load(config.wrvu_file)
-    df = parser.parse(input_path)
+    df = parser.parse(input_path, report_type=report_type)
     date_range = parser.extract_date_range(input_path)
     source_name = os.path.basename(input_path)
 
