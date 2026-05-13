@@ -23,8 +23,34 @@ def _is_app(name: str, config: Config) -> bool:
     return False
 
 
+def _clean_for_summary(df: pd.DataFrame, config: Config) -> pd.DataFrame:
+    """
+    Light clean for the Charge Summary sheet.
+
+    Only rows for omitted persons are removed entirely.  Charges signed by
+    excluded_signers are KEPT and attributed to their supervising MD — this
+    captures e.g. admin staff who sign hospital consult charges on behalf of
+    a physician.  The signer identity is not surfaced on the summary sheet;
+    only supervising_md / cpt / count / wRVU are reported.
+    """
+    omitted = set(config.omit)
+
+    df = df[~df["signed_off_by"].isin(omitted)].copy()
+    df = df[~df["supervising_md"].isin(omitted)].copy()
+
+    if config.location_filter:
+        df = df[df["location"].str.contains(config.location_filter, case=False, na=False)].copy()
+
+    return df.reset_index(drop=True)
+
+
 def _clean(df: pd.DataFrame, config: Config) -> pd.DataFrame:
-    """Apply exclusions, omissions, and reclassifications."""
+    """
+    Full clean for the Supervision Matrix.
+
+    Drops rows for both excluded_signers and omitted persons — excluded people
+    must not appear as APP columns in the matrix.
+    """
     all_excluded = set(config.excluded_signers) | set(config.omit)
 
     # Drop rows where the signer is excluded or omitted
@@ -32,10 +58,6 @@ def _clean(df: pd.DataFrame, config: Config) -> pd.DataFrame:
 
     # Drop rows where the supervising MD is omitted
     df = df[~df["supervising_md"].isin(all_excluded)].copy()
-
-    # Reclassified MDs: keep original supervising_md — the reclassification only
-    # affects how their signed charges are classified (not as APPs), not who
-    # receives credit for supervising.
 
     if config.location_filter:
         df = df[df["location"].str.contains(config.location_filter, case=False, na=False)].copy()
@@ -51,8 +73,12 @@ def build_charge_summary(
     """
     Returns a long-form DataFrame:
       supervising_md | cpt | description | count | wrvu_per_unit | total_wrvu
+
+    All charges for each supervising MD are included regardless of who signed
+    them — excluded_signers' charges roll up to the supervising MD rather than
+    being dropped.  Only omitted persons are removed entirely.
     """
-    df = _clean(df, config)
+    df = _clean_for_summary(df, config)
 
     rows = []
     for (sup_md, cpt), grp in df.groupby(["supervising_md", "cpt"], sort=True):
