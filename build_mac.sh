@@ -9,6 +9,9 @@ PIP=/Library/Frameworks/Python.framework/Versions/3.14/bin/pip3
 echo "==> Installing / upgrading PyInstaller"
 $PIP install --upgrade pyinstaller
 
+echo "==> Cleaning previous build"
+rm -rf dist build
+
 echo "==> Building .app bundle"
 $PYTHON -m PyInstaller \
   --windowed \
