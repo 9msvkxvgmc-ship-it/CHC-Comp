@@ -68,28 +68,31 @@ jobs:
           pip install pyinstaller
 
       - name: Build .exe
+        shell: bash
         run: |
-          python -m PyInstaller `
-            --windowed `
-            --onedir `
-            --name ChargeSupervisionMatrix `
-            --hidden-import charge_supervision_matrix.gui `
-            --hidden-import charge_supervision_matrix.runner `
-            --hidden-import charge_supervision_matrix.suggest `
-            --hidden-import charge_supervision_matrix.analysis `
-            --hidden-import charge_supervision_matrix.parser `
-            --hidden-import charge_supervision_matrix.output `
-            --hidden-import charge_supervision_matrix.wrvu `
-            --hidden-import charge_supervision_matrix.config `
-            --hidden-import pandas `
-            --hidden-import openpyxl `
-            --hidden-import openpyxl.styles `
-            --hidden-import openpyxl.utils `
+          python -m PyInstaller \
+            --windowed \
+            --onedir \
+            --name ChargeSupervisionMatrix \
+            --hidden-import charge_supervision_matrix.gui \
+            --hidden-import charge_supervision_matrix.runner \
+            --hidden-import charge_supervision_matrix.suggest \
+            --hidden-import charge_supervision_matrix.analysis \
+            --hidden-import charge_supervision_matrix.parser \
+            --hidden-import charge_supervision_matrix.output \
+            --hidden-import charge_supervision_matrix.wrvu \
+            --hidden-import charge_supervision_matrix.config \
+            --hidden-import pandas \
+            --hidden-import openpyxl \
+            --hidden-import openpyxl.styles \
+            --hidden-import openpyxl.utils \
             gui_app.py
 
       - name: Zip for download
+        shell: bash
         run: |
-          Compress-Archive -Path dist\ChargeSupervisionMatrix -DestinationPath dist\ChargeSupervisionMatrix-Windows.zip
+          cd dist
+          7z a ChargeSupervisionMatrix-Windows.zip ChargeSupervisionMatrix/
 
       - uses: actions/upload-artifact@v4
         with:
