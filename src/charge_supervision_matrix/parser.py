@@ -7,9 +7,9 @@ Two report types are supported:
                Supervisor column: col 26 ("Supervising MD")
                CPT: col 21 | Qty: col 23 | Signed-Off By: col 31
 
-  outpatient — "All Signed Charges (Quick Run)" export grouped by Order MD
-               Supervisor column: col 26 ("Order MD")
-               CPT: col 18 | Qty: col 22 | Signed-Off By: col 30
+  outpatient — "All Signed Charges" export grouped by Order MD
+               Supervisor column: col 27 ("Order MD")
+               CPT: col 21 | Qty: col 23 | Signed-Off By: col 31
 """
 
 import re
@@ -36,21 +36,23 @@ _INPATIENT_COL = {
 }
 
 # Outpatient column map (grouped by Order MD)
+# Same layout as inpatient; only the supervisor column differs:
+# col 27 = Order MD (outpatient supervisor) vs col 26 = Supervising MD (inpatient)
 _OUTPATIENT_COL = {
     "patient": 1,
     "mrn": 3,
     "description": 4,
-    "charge_type": 16,
-    "cpt": 18,
-    "modifier": 19,
-    "qty": 22,
-    "order_date": 24,
-    "supervising_md": 26,   # "Order MD" column used as supervisor for outpatient
-    "order_md": 26,
-    "schedule_staff": 28,
-    "location": 29,
-    "signed_off_by": 30,
-    "primary_insurer": 35,
+    "charge_type": 18,
+    "cpt": 21,
+    "modifier": 22,
+    "qty": 23,
+    "order_date": 25,
+    "supervising_md": 27,   # "Order MD" column used as supervisor for outpatient
+    "order_md": 27,
+    "schedule_staff": 29,
+    "location": 30,
+    "signed_off_by": 31,
+    "primary_insurer": 36,
 }
 
 _GROUP_PATTERNS = {
