@@ -162,15 +162,14 @@ def build_supervision_matrix(
     pivot = pivot.reindex(sorted(pivot.columns), axis=1)
     pivot = pivot.reindex(sorted(pivot.index))
 
-    # Convert to proportions: each APP column / APP's total across ALL rows
-    # (denominator = total wRVUs that APP signed across all supervising MDs,
-    #  including any rows we filtered out — so we recompute from the full app_df)
-    app_totals_full = (
-        app_df.groupby("signed_off_by")["wrvu"]
-        .sum()
-        .reindex(pivot.columns, fill_value=0.0)
-    )
-    matrix = pivot.div(app_totals_full, axis=1).round(6)
+    # Convert to proportions.
+    # Denominator = wRVUs each APP signed under true supervising MDs only
+    # (i.e. the sum of each column already in the pivot).  This ensures every
+    # APP column sums to exactly 100 %.  Any APP charges supervised by another
+    # APP are intentionally excluded from both numerator and denominator because
+    # they have no physician row to be allocated to.
+    app_totals_in_matrix = pivot.sum(axis=0)
+    matrix = pivot.div(app_totals_in_matrix, axis=1).round(6)
     matrix = matrix.replace([float("inf"), float("-inf")], 0.0)
 
     # Supervising MD total wRVU (ALL charges under them, not just APP charges)
@@ -182,7 +181,12 @@ def build_supervision_matrix(
     )
     matrix["Total wRVU (Sup MD)"] = md_total_wrvu
 
-    # APP totals row
+    # APP totals row — show full wRVU production (all supervisors) for reference
+    app_totals_full = (
+        app_df.groupby("signed_off_by")["wrvu"]
+        .sum()
+        .reindex(pivot.columns, fill_value=0.0)
+    )
     app_totals_row = app_totals_full.round(2).to_dict()
     app_totals_row["Total wRVU (Sup MD)"] = None
     matrix.loc["APP Total wRVU Signed"] = app_totals_row
