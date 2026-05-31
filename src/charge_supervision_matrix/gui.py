@@ -196,7 +196,12 @@ class App(tk.Tk):
         self._analysis = result
         inp = Path(self._inp_var.get())
         if not self._out_var.get():
-            self._out_var.set(str(inp.parent / (inp.stem + "_report.xlsx")))
+            # Default output to ~/ChargeSupervision Reports/ — a home-directory
+            # subfolder that is always writable by unsigned .app bundles.
+            # (Downloads, Documents, and Desktop are TCC-protected on macOS.)
+            out_dir = Path.home() / "ChargeSupervision Reports"
+            out_dir.mkdir(exist_ok=True)
+            self._out_var.set(str(out_dir / (inp.stem + "_report.xlsx")))
 
         dr = result.get("date_range", "")
         tc = result.get("total_charges", 0)
@@ -335,10 +340,23 @@ class App(tk.Tk):
         if not self._analysis:
             messagebox.showerror("Not ready", "Please analyze an input file first.")
             return
-        out = self._out_var.get().strip()
+
+        # Always confirm the save location through the native macOS save panel.
+        # This is required for unsigned apps to get write permission to protected
+        # folders (Downloads, Documents, Desktop, etc.).
+        suggested = self._out_var.get().strip()
+        initial_dir  = str(Path(suggested).parent) if suggested else str(Path.home())
+        initial_file = Path(suggested).name        if suggested else "report.xlsx"
+        out = filedialog.asksaveasfilename(
+            title="Save report as",
+            initialdir=initial_dir,
+            initialfile=initial_file,
+            defaultextension=".xlsx",
+            filetypes=[("Excel workbook", "*.xlsx")],
+        )
         if not out:
-            messagebox.showerror("No output path", "Please specify where to save the report.")
-            return
+            return  # user cancelled
+        self._out_var.set(out)
 
         excluded, add_app, reclassify = [], [], []
 
@@ -371,14 +389,19 @@ class App(tk.Tk):
         rt = self._report_type.get()
 
         def _run():
+            import traceback
             try:
                 written = runner.run(input_path=inp, output_path=out, config=config, report_type=rt)
                 self.after(0, lambda: self._done(written))
             except Exception as exc:
-                self.after(0, lambda: (
-                    self._status_var.set("Error generating report."),
-                    messagebox.showerror("Generation failed", str(exc)),
-                ))
+                tb = traceback.format_exc()
+                try:
+                    with open("/tmp/csm_error.log", "w") as f:
+                        f.write(tb)
+                except Exception:
+                    pass
+                msg = str(exc) or "(unknown — see /tmp/csm_error.log)"
+                self.after(0, lambda m=msg: self._status_var.set(f"Error: {m}"))
 
         threading.Thread(target=_run, daemon=True).start()
 
